@@ -2,9 +2,6 @@ plugins {
     alias(libs.plugins.android.library)
 }
 
-group = LIBRARY_GROUP
-version = LIBRARY_VERSION
-
 android {
     namespace 'com.dwhy.websocketscan'
     compileSdk 34
@@ -34,6 +31,9 @@ afterEvaluate {
         publications {
             release(MavenPublication) {
                 from components.findByName('androidRelease')
+                groupId = 'com.github.jingyao6'
+                artifactId = 'WebSocketScan'
+                version = '1.0.0'
             }
         }
     }
