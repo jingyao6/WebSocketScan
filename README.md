@@ -20,7 +20,7 @@ allprojects {
 
 // 模块 build.gradle
 dependencies {
-    implementation 'com.github.jingyao6:WebSocketScan:v1.0.6'
+    implementation 'com.github.jingyao6:WebSocketScan:v1.0.7'
 }
 ```
 
