@@ -26,7 +26,7 @@ allprojects {
 
 ```gradle
 dependencies {
-    implementation 'com.github.<你的GitHub用户名>:WebSocketScan:v1.0.0'
+    implementation 'com.github.jingyao6:WebSocketScan:v1.0.0'
 }
 ```
 
