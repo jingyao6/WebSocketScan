@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WebSocketScan Demo</string>
+    <string name="btn_connect">连接</string>
+    <string name="btn_disconnect">断开</string>
+    <string name="btn_discovery_start">开启发现</string>
+    <string name="btn_discovery_stop">停止发现</string>
+    <string name="btn_send">发送</string>
+    <string name="btn_start">启动</string>
+    <string name="btn_stop">停止</string>
+    <string name="hint_ip">IP</string>
+    <string name="hint_message">消息内容</string>
+    <string name="hint_port">端口</string>
+    <string name="hint_subtitle">选择本机的运行模式</string>
+    <string name="label_devices">发现的设备</string>
+    <string name="label_log">消息日志</string>
+    <string name="mode_client">作为客户端</string>
+    <string name="mode_server">作为服务端</string>
+    <string name="server_status_stopped">服务未启动</string>
+    <string name="title">WebSocketScan Demo</string>
+    <string name="title_client">作为客户端</string>
+    <string name="title_server">作为服务端</string>
+    <string name="toast_empty_message">消息不能为空</string>
+    <string name="toast_invalid_ip">请输入 IP 和端口</string>
+    <string name="toast_invalid_port">请输入有效端口</string>
+    <string name="toast_no_ip">无法获取本机 IP，请检查网络</string>
+    <string name="toast_not_connected">客户端未连接</string>
+    <string name="toast_not_running">服务未运行</string>
+</resources>
