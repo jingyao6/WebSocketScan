@@ -26,7 +26,10 @@ android {
 }
 
 dependencies {
-    implementation libs.websocketscan
+    // JitPack 构建沙箱里 demo 不能引用自己（app 产物此时还没发布到 jitpack.io），
+    // 所以走本地 module；JitPack 上 v1.0.0 产物发布成功后，本地临时改成
+    // implementation 'com.github.jingyao6:WebSocketScan:v1.0.0' 即可验证 JitPack 集成。
+    implementation project(':app')
     implementation libs.appcompat
     implementation libs.material
 }
