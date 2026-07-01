@@ -5,11 +5,11 @@ plugins {
 android {
     namespace 'com.dwhy.websocketscan'
     compileSdk 34
-    archivesBaseName = 'WebSocketScan'
 
     defaultConfig {
         minSdk 21
         targetSdk 34
+        archivesBaseName = 'WebSocketScan'
         consumerProguardFiles 'consumer-rules.pro'
     }
 
