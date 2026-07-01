@@ -45,7 +45,7 @@ public class UdpDiscoveryManager {
         public String name, ip;
         public int port;
 
-        DeviceInfo(String name, String ip, int port) {
+        public DeviceInfo(String name, String ip, int port) {
             this.name = name;
             this.ip = ip;
             this.port = port;
