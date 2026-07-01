@@ -1,5 +1,7 @@
 package com.dwhy.websocketscan.demo;
 
+import android.content.Context;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -36,6 +38,7 @@ public class ServerActivity extends AppCompatActivity {
 
     private WebSocketServerManager serverManager;
     private UdpDiscoveryManager discoveryManager;
+    private WifiManager.MulticastLock multicastLock;
     private final List<String> logs = new ArrayList<>();
     private ArrayAdapter<String> logAdapter;
     private final SimpleDateFormat timeFmt = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
@@ -119,6 +122,7 @@ public class ServerActivity extends AppCompatActivity {
             return;
         }
         serverManager.start(port);
+        ensureMulticastLock();
         discoveryManager.start(ip, port, "Server-" + ip);
         running = true;
         btnToggle.setText(R.string.btn_stop);
@@ -128,7 +132,25 @@ public class ServerActivity extends AppCompatActivity {
         updateStatus();
     }
 
+    private void ensureMulticastLock() {
+        if (multicastLock == null) {
+            WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            multicastLock = wifi.createMulticastLock("WebSocketScan");
+            multicastLock.setReferenceCounted(false);
+        }
+        if (!multicastLock.isHeld()) {
+            multicastLock.acquire();
+        }
+    }
+
+    private void releaseMulticastLock() {
+        if (multicastLock != null && multicastLock.isHeld()) {
+            multicastLock.release();
+        }
+    }
+
     private void stopServer() {
+        releaseMulticastLock();
         serverManager.stop();
         discoveryManager.stop();
         running = false;
@@ -178,6 +200,7 @@ public class ServerActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        releaseMulticastLock();
         if (serverManager != null) serverManager.stop();
         if (discoveryManager != null) discoveryManager.stop();
     }

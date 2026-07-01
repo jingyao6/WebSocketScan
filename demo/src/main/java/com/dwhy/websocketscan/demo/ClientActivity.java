@@ -1,5 +1,7 @@
 package com.dwhy.websocketscan.demo;
 
+import android.content.Context;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -39,6 +41,7 @@ public class ClientActivity extends AppCompatActivity {
 
     private WebSocketClientManager clientManager;
     private UdpDiscoveryManager discoveryManager;
+    private WifiManager.MulticastLock multicastLock;
     private final List<String> logs = new ArrayList<>();
     private ArrayAdapter<String> logAdapter;
     private final List<UdpDiscoveryManager.DeviceInfo> devices = new ArrayList<>();
@@ -210,6 +213,23 @@ public class ClientActivity extends AppCompatActivity {
         updateStatus();
     }
 
+    private void ensureMulticastLock() {
+        if (multicastLock == null) {
+            WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            multicastLock = wifi.createMulticastLock("WebSocketScan");
+            multicastLock.setReferenceCounted(false);
+        }
+        if (!multicastLock.isHeld()) {
+            multicastLock.acquire();
+        }
+    }
+
+    private void releaseMulticastLock() {
+        if (multicastLock != null && multicastLock.isHeld()) {
+            multicastLock.release();
+        }
+    }
+
     private void startDiscovery() {
         String ip = getLocalIpv4();
         if (ip == null) {
@@ -217,6 +237,7 @@ public class ClientActivity extends AppCompatActivity {
             return;
         }
         // 客户端不提供 WebSocket 服务，wsPort 传 0
+        ensureMulticastLock();
         discoveryManager.start(ip, 0, "Client-" + ip);
         discovering = true;
         btnDiscovery.setText(R.string.btn_discovery_stop);
@@ -224,6 +245,7 @@ public class ClientActivity extends AppCompatActivity {
     }
 
     private void stopDiscovery() {
+        releaseMulticastLock();
         discoveryManager.stop();
         devices.clear();
         deviceAdapter.clear();
@@ -268,6 +290,7 @@ public class ClientActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        releaseMulticastLock();
         if (clientManager != null) clientManager.disconnect();
         if (discoveryManager != null) discoveryManager.stop();
     }
