@@ -1,9 +1,13 @@
 package com.dwhy.websocketscan.demo;
 
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -17,9 +21,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.dwhy.websocketscan.UdpDiscoveryManager;
 import com.dwhy.websocketscan.WebSocketServerManager;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -29,12 +37,15 @@ import java.util.Locale;
 
 public class ServerActivity extends AppCompatActivity {
 
+    private static final int REQUEST_CODE_PICK_FILE = 1001;
+
     private TextView tvStatus;
     private EditText etPort;
     private Button btnToggle;
     private ListView lvLog;
     private EditText etMessage;
     private Button btnSend;
+    private Button btnSendBinary;
 
     private WebSocketServerManager serverManager;
     private UdpDiscoveryManager discoveryManager;
@@ -55,6 +66,7 @@ public class ServerActivity extends AppCompatActivity {
         lvLog = findViewById(R.id.lv_log);
         etMessage = findViewById(R.id.et_message);
         btnSend = findViewById(R.id.btn_send);
+        btnSendBinary = findViewById(R.id.btn_send_binary);
 
         logAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, logs);
         lvLog.setAdapter(logAdapter);
@@ -76,6 +88,11 @@ public class ServerActivity extends AppCompatActivity {
             @Override
             public void onMessage(String clientId, String message) {
                 appendLog("← " + clientId + " : " + message);
+            }
+
+            @Override
+            public void onBinaryMessage(String clientId, ByteBuffer data) {
+                appendLog("← " + clientId + " : [二进制] " + data.remaining() + " 字节");
             }
 
             @Override
@@ -106,6 +123,23 @@ public class ServerActivity extends AppCompatActivity {
             serverManager.broadcast(msg);
             appendLog("→ [广播] " + msg);
             etMessage.setText("");
+        });
+
+        btnSendBinary.setOnClickListener(v -> {
+            if (!serverManager.isRunning()) {
+                Toast.makeText(this, R.string.toast_not_running, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("*/*");
+            String[] mimeTypes = {"image/*", "application/*", "text/*"};
+            intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+            try {
+                startActivityForResult(intent, REQUEST_CODE_PICK_FILE);
+            } catch (Exception e) {
+                Toast.makeText(this, "没有可用的文件选择器", Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
@@ -191,6 +225,60 @@ public class ServerActivity extends AppCompatActivity {
                         return addr.getHostAddress();
                     }
                 }
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQUEST_CODE_PICK_FILE) return;
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) {
+            appendLog("[取消] 未选择文件");
+            return;
+        }
+        Uri uri = data.getData();
+        String name = queryFileName(uri);
+        new Thread(() -> {
+            try {
+                byte[] bytes = readBytesFromUri(uri);
+                if (bytes == null || bytes.length == 0) {
+                    appendLog("[错误] 文件为空或读取失败");
+                    return;
+                }
+                final int len = bytes.length;
+                serverManager.broadcast(ByteBuffer.wrap(bytes));
+                appendLog("→ [广播二进制] " + (name != null ? name : "未知文件") + " (" + len + " 字节)");
+            } catch (Exception e) {
+                appendLog("[错误] 读取文件失败: " + e.getMessage());
+            }
+        }).start();
+    }
+
+    private byte[] readBytesFromUri(Uri uri) {
+        try (InputStream is = getContentResolver().openInputStream(uri);
+             BufferedInputStream bis = new BufferedInputStream(is);
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = bis.read(buf)) != -1) {
+                baos.write(buf, 0, n);
+            }
+            return baos.toByteArray();
+        } catch (Exception e) {
+            Log.w("ServerActivity", "读取文件失败: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private String queryFileName(Uri uri) {
+        try (android.database.Cursor cursor = getContentResolver().query(
+                uri, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                int idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                if (idx >= 0) return cursor.getString(idx);
             }
         } catch (Exception ignored) {
         }

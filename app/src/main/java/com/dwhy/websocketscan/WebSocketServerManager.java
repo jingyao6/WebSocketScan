@@ -9,6 +9,7 @@ import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -31,6 +32,7 @@ public class WebSocketServerManager {
         void onConnected(String clientId);
         void onDisconnected(String clientId);
         void onMessage(String clientId, String message);
+        void onBinaryMessage(String clientId, ByteBuffer data);
         void onError(String error);
     }
 
@@ -73,9 +75,18 @@ public class WebSocketServerManager {
             @Override
             public void onMessage(WebSocket conn, String message) {
                 String clientId = conn.getRemoteSocketAddress().toString();
-                Log.d(TAG, "收到消息 from " + clientId + ": " + message);
+                Log.d(TAG, "收到文本消息 from " + clientId + ": " + message);
                 if (listener != null) {
                     listener.onMessage(clientId, message);
+                }
+            }
+
+            @Override
+            public void onMessage(WebSocket conn, ByteBuffer blob) {
+                String clientId = conn.getRemoteSocketAddress().toString();
+                Log.d(TAG, "收到二进制消息 from " + clientId + ", 长度: " + blob.remaining());
+                if (listener != null) {
+                    listener.onBinaryMessage(clientId, blob);
                 }
             }
 
@@ -183,6 +194,18 @@ public class WebSocketServerManager {
             if (conn.isOpen()) {
                 conn.send(message);
                 Log.i(TAG, "发送广播 ："+ message);
+            }
+        }
+    }
+
+    /**
+     * 向所有已连接客户端广播二进制消息
+     */
+    public void broadcast(ByteBuffer data) {
+        for (WebSocket conn : clients.values()) {
+            if (conn.isOpen()) {
+                conn.send(data);
+                Log.i(TAG, "发送二进制广播, 长度: " + data.remaining());
             }
         }
     }

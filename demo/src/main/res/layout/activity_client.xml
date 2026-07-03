@@ -108,4 +108,11 @@
             android:layout_marginStart="8dp"
             android:text="@string/btn_send" />
     </LinearLayout>
+
+    <Button
+        android:id="@+id/btn_send_binary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/btn_send_binary" />
 </LinearLayout>

@@ -9,6 +9,7 @@ import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class WebSocketClientManager {
@@ -29,6 +30,7 @@ public class WebSocketClientManager {
         void onConnected();
         void onDisconnected(int code, String reason);
         void onMessage(String message);
+        void onBinaryMessage(ByteBuffer data);
         void onError(String error);
     }
 
@@ -72,6 +74,14 @@ public class WebSocketClientManager {
                     Log.d(TAG, "收到消息: " + message);
                     if (listener != null) {
                         listener.onMessage(message);
+                    }
+                }
+
+                @Override
+                public void onMessage(ByteBuffer bytes) {
+                    Log.d(TAG, "收到二进制消息, 长度: " + bytes.remaining());
+                    if (listener != null) {
+                        listener.onBinaryMessage(bytes);
                     }
                 }
 
@@ -155,6 +165,18 @@ public class WebSocketClientManager {
             Log.i(TAG, "发送消息: " + message);
         } else {
             Log.w(TAG, "客户端未连接，发送失败: " + message);
+        }
+    }
+
+    /**
+     * 发送二进制消息
+     */
+    public void send(ByteBuffer data) {
+        if (client != null && client.isOpen()) {
+            client.send(data);
+            Log.i(TAG, "发送二进制消息, 长度: " + data.remaining());
+        } else {
+            Log.w(TAG, "客户端未连接，发送二进制失败");
         }
     }
 
